@@ -68,9 +68,16 @@ Não é `<dialog>`: é um `bds-modal` que **cancela cliques fora dele** (o escud
 | Cancelar | `#transfer-attendance bds-button[variant="secondary"]` com texto "Cancelar" | button "Cancelar" | sem id |
 | Fechar (X) | ícone "close" do `bds-modal` | image "close" | |
 
+**Lista aberta × fechada** (capturas v1.0.3 de 25/11 14h05m46 aberta e 14h05m57 fechada):
+- Aberta: dentro da sombra do `#autocompleteTeam`, o `div.select__options` ganha a classe **`select__options--open`**
+  e as opções ficam visíveis (abaixo do campo, ~200 px de altura, com rolagem).
+- Fechada: o mesmo `div.select__options` **sem** `--open`; as opções continuam lá, só invisíveis.
+- Para o BM saber se abriu: `autocompleteTeam.shadowRoot.querySelector('.select__options--open')`.
+- O campo de digitar da lista começa vazio (`input` na sombra); digitar nele deve filtrar as opções (**deduzido**, não capturado).
+
 Para um BM de transferir: modo Simular = abrir modal → escolher fila → conferir que `#confirm-transfer-btn` liberou →
 **Cancelar** (sem clicar em "Transferir ticket").
 
 ## Ainda falta capturar
 - Opção **"Atendente"** marcada (a lista muda para atendentes; não capturado).
-- Por que o painel trava com a lista "Selecionar fila" **aberta** (não precisa para mapear: as opções já vêm na captura com a lista fechada).
+- ~~Lista "Selecionar fila" aberta~~: capturada com a v1.0.3.
