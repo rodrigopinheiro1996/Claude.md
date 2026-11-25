@@ -1,6 +1,6 @@
 {
   "name": "bm-captura-blip",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "BM que salva a tela do Blip (com Shadow DOM) num arquivo, com dados de clientes mascarados",
   "scripts": {

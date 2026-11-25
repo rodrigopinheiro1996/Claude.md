@@ -59,3 +59,55 @@ test('montar arquivo: sombra vira template, css vai separado, texto mascarado e 
   assert.match(html, /<script type="application\/json" id="rb-css">\["button\{color:red\}"\]<\/script>/);
   assert.match(html, /<meta name="rodbot-captura"/);
 });
+
+// ---- Vazamentos encontrados nas capturas reais do Blip (25/11). Dados abaixo são FICTÍCIOS. ----
+const arvoreCom = (body) => ({ t: 'doc', html: { t: 'el', tag: 'html', attrs: [], kids: [
+  { t: 'el', tag: 'head', attrs: [], kids: [] }, { t: 'el', tag: 'body', attrs: [], kids: body }] } });
+
+test('nome de uma palavra só no "Ticket 123 - Nome" vira candidato e some de todo o arquivo', () => {
+  const arv = arvoreCom([
+    { t: 'el', tag: 'article', attrs: [['aria-label', 'Ticket 1112223 - Zuleidex']], kids: [] },
+    { t: 'el', tag: 'span', attrs: [['id', 'customer-name']], kids: [{ t: 'text', v: 'Zuleidex' }] },
+    { t: 'el', tag: 'p', attrs: [], kids: [{ t: 'text', v: 'Zuleidexa é outra palavra' }] }
+  ]);
+  const cand = p.rbJuntarCandidatos(arv, {});
+  assert.ok(cand.includes('Zuleidex'), 'candidatos: ' + cand);
+  const html = p.rbMontarArquivo(arv, [], {}, { esconder: { Zuleidex: true } });
+  assert.ok(!/Zuleidex[^a]/.test(html), 'sobrou o nome');
+  assert.match(html, /Zuleidexa é outra palavra/, 'não pode cortar pedaço de outra palavra');
+});
+
+test('"Nome: Fulano" no resumo do ticket vira candidato', () => {
+  const arv = arvoreCom([{ t: 'el', tag: 'p', attrs: [], kids: [
+    { t: 'el', tag: 'b', attrs: [], kids: [{ t: 'text', v: 'Nome:' }] }, { t: 'text', v: ' Zuleidex' }] },
+    { t: 'el', tag: 'p', attrs: [], kids: [{ t: 'text', v: 'Nome: Quelvia' }] }]);
+  const cand = p.rbJuntarCandidatos(arv, {});
+  assert.ok(cand.includes('Zuleidex') && cand.includes('Quelvia'), 'candidatos: ' + cand);
+});
+
+test('atributo name de avatar (bds-avatar) é mascarado; name de campo de formulário não', () => {
+  const arv = arvoreCom([
+    { t: 'el', tag: 'bds-avatar', attrs: [['name', 'Zuleidex Quelvia']], kids: [] },
+    { t: 'el', tag: 'input', attrs: [['name', 'Telefone Celular']], kids: [] }]);
+  const cand = p.rbJuntarCandidatos(arv, {});
+  assert.ok(cand.includes('Zuleidex Quelvia'));
+  const html = p.rbMontarArquivo(arv, [], {}, { esconder: { 'Zuleidex Quelvia': true } });
+  assert.match(html, /<bds-avatar name="Nome Fictício">/);
+  assert.match(html, /<input name="Telefone Celular">/);
+});
+
+test('id de mensagem do WhatsApp (wamid, tem o telefone codificado) é trocado, mantendo ids diferentes', () => {
+  // base64 de "551234567890" (telefone fictício) = NTUxMjM0NTY3ODkw
+  const a = 'wamid.HBgMNTUxMjM0NTY3ODkwFQIAEhgWM0VBQUFBQUFBQUFBQUFBQUFBQUFBAA=';
+  const b2 = 'wamid.HBgMNTUxMjM0NTY3ODkwFQIAEhgWM0VCQkJCQkJCQkJCQkJCQkJCQkJCAA=';
+  const arv = arvoreCom([
+    { t: 'el', tag: 'div', attrs: [['id', a]], kids: [] },
+    { t: 'el', tag: 'div', attrs: [['id', b2]], kids: [] },
+    { t: 'el', tag: 'a', attrs: [['href', '#' + a]], kids: [] }]);
+  const html = p.rbMontarArquivo(arv, [], {}, {});
+  assert.ok(!html.includes('NTUxMjM0NTY3ODkw'), 'sobrou o telefone codificado');
+  const ids = [...html.matchAll(/id="(wamid\.[^"]+)"/g)].map(m => m[1]);
+  assert.strictEqual(ids.length, 2);
+  assert.notStrictEqual(ids[0], ids[1]);
+  assert.ok(html.includes('href="#' + ids[0] + '"'), 'o mesmo id deve virar o mesmo texto');
+});

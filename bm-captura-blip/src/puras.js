@@ -1,7 +1,7 @@
 // Funções puras (sem DOM): máscara de dados pessoais e montagem do arquivo HTML.
 // Testadas no Node (tests/puras.test.js).
 
-var RB_VERSAO = '1.0.2';
+var RB_VERSAO = '1.0.3';
 
 // Primeiros nomes comuns no Brasil (sem acento, minúsculos). Se uma sequência de
 // palavras com inicial maiúscula tiver um destes, ela vira "Nome Fictício".
@@ -50,11 +50,22 @@ function rbNovaContagem() {
 
 // opts: { extras: ['Fulano', ...], textoLongo: true, limiteLongo: 80,
 //         esconder: { 'Texto Exato': true }, cont: rbNovaContagem() }
+// IDs de mensagem do WhatsApp ("wamid.HBgM...") têm o telefone do cliente codificado dentro.
+// Troca por "wamid.FICTICIO1", "wamid.FICTICIO2"...; o mesmo id original vira sempre o mesmo texto.
+function rbTrocarWamid(s, opts) {
+  if (String(s).indexOf('wamid.') === -1) return s;
+  opts.ids = opts.ids || { n: 0, mapa: {} };
+  return String(s).replace(/wamid\.[A-Za-z0-9+\/=_-]+/g, function (m) {
+    if (!opts.ids.mapa[m]) { opts.ids.n++; opts.ids.mapa[m] = 'wamid.FICTICIO' + opts.ids.n; }
+    return opts.ids.mapa[m];
+  });
+}
+
 function rbMascararTexto(s, opts) {
   opts = opts || {};
   var cont = opts.cont || rbNovaContagem();
   if (!s || !/\S/.test(s)) return s;
-  var t = String(s);
+  var t = rbTrocarWamid(String(s), opts);
 
   (opts.extras || []).forEach(function (x) {
     x = String(x).trim();
@@ -82,8 +93,9 @@ function rbMascararTexto(s, opts) {
   if (opts.esconder) {
     Object.keys(opts.esconder).forEach(function (x) {
       if (!x || !opts.esconder[x] || t.indexOf(x) === -1) return;
-      cont.revisados++;
-      t = t.split(x).join('Nome Fictício');
+      // só a palavra inteira ("Ana" não pode cortar "Banana")
+      var re = new RegExp('(^|[^\\p{L}\\p{N}])' + rbEscRegex(x) + '(?![\\p{L}\\p{N}])', 'gu');
+      t = t.replace(re, function (m, antes) { cont.revisados++; return antes + 'Nome Fictício'; });
     });
   }
 
@@ -127,8 +139,21 @@ var RB_ATTR_LIVRES = { id: 1, class: 1, style: 1, slot: 1, name: 1, type: 1, rol
 function rbEscTexto(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function rbEscAttr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
-function rbAttrLivre(nome) {
+// "name" só é estrutura em campos de formulário; no bds-avatar do Blip ele guarda o nome da pessoa.
+var RB_TAGS_FORM = { input: 1, select: 1, textarea: 1, button: 1, form: 1, fieldset: 1, output: 1, iframe: 1,
+  meta: 1, slot: 1, map: 1, param: 1, object: 1 };
+
+function rbAttrLivre(nome, tag) {
+  if (nome === 'name') return !!RB_TAGS_FORM[tag];
   return !!RB_ATTR_LIVRES[nome] || nome.indexOf('data-rb-') === 0;
+}
+
+// Texto de um nó da árvore, juntando os filhos (para achar "Nome:" e o #customer-name).
+function rbTextoNo(n) {
+  if (!n) return '';
+  if (n.t === 'text') return n.v;
+  if (n.t !== 'el' || n.raw) return '';
+  return (n.kids || []).map(rbTextoNo).join('');
 }
 
 // Percorre a árvore e junta os candidatos (já depois da máscara automática).
@@ -136,18 +161,41 @@ function rbJuntarCandidatos(arvore, opts) {
   var vistos = {};
   var lista = [];
   var o = { extras: opts.extras, textoLongo: opts.textoLongo, limiteLongo: opts.limiteLongo, cont: rbNovaContagem() };
+  function guardar(c) {
+    if (!vistos[c]) { vistos[c] = true; lista.push(c); }
+  }
+  // Texto que com certeza é nome (pelo lugar onde aparece), mesmo sendo uma palavra só.
+  function direto(txt) {
+    var c = rbMascararTexto(String(txt || ''), o).replace(/\s+/g, ' ').trim();
+    if (!c || c.length > 60 || c.indexOf('Fictício') !== -1 || c.indexOf('FICTÍCIO') !== -1 || !/\p{L}/u.test(c)) return;
+    guardar(c);
+  }
   function add(txt) {
-    rbCandidatos(rbMascararTexto(txt, o)).forEach(function (c) {
-      if (!vistos[c]) { vistos[c] = true; lista.push(c); }
-    });
+    var m = rbMascararTexto(txt, o);
+    rbCandidatos(m).forEach(guardar);
+    var a = /Ticket\s+#?\S+\s+-\s+(.+)$/.exec(String(txt));
+    if (a) direto(a[1]);
+    var b = /Nome\s*:\s*([^\n:]+)/.exec(String(txt));
+    if (b) direto(b[1]);
   }
   function visitar(n, raw) {
     if (!n) return;
     if (n.t === 'doc') return visitar(n.html, false);
     if (n.t === 'text') { if (!raw) add(n.v); return; }
-    (n.attrs || []).forEach(function (a) { if (!rbAttrLivre(a[0])) add(a[1]); });
+    (n.attrs || []).forEach(function (a) {
+      if (rbAttrLivre(a[0], n.tag)) return;
+      add(a[1]);
+      if (a[0] === 'name') direto(a[1]); // bds-avatar name="..."
+    });
+    var id = (n.attrs || []).filter(function (a) { return a[0] === 'id'; })[0];
+    if (id && id[1] === 'customer-name') direto(rbTextoNo(n));
     if (n.sombra) n.sombra.kids.forEach(function (k) { visitar(k, false); });
-    (n.kids || []).forEach(function (k) { visitar(k, n.raw); });
+    var kids = n.kids || [];
+    kids.forEach(function (k, i) {
+      visitar(k, n.raw);
+      // <b>Nome:</b> Fulano  -> o texto logo depois do rótulo
+      if (k.t === 'el' && /^\s*Nome\s*:\s*$/.test(rbTextoNo(k)) && kids[i + 1]) direto(rbTextoNo(kids[i + 1]));
+    });
     if (n.doc) visitar(n.doc, false);
   }
   visitar(arvore, false);
@@ -161,7 +209,7 @@ function rbSerializarNo(n, opts) {
   if (n.t === 'raw') return String(n.v).replace(/<\/(style)/gi, '<\\/$1');
   var h = '<' + n.tag;
   (n.attrs || []).forEach(function (a) {
-    var v = rbAttrLivre(a[0]) ? a[1] : rbMascararTexto(a[1], opts);
+    var v = rbAttrLivre(a[0], n.tag) ? rbTrocarWamid(a[1], opts) : rbMascararTexto(a[1], opts);
     h += ' ' + a[0] + (v === '' ? '' : '="' + rbEscAttr(v) + '"');
   });
   if (n.doc) h += ' srcdoc="' + rbEscAttr(rbSerializarNo(n.doc, opts)) + '"';

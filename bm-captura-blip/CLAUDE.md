@@ -9,6 +9,10 @@ elementos e montar/testar os BMs em cima de uma cópia fiel da tela real.
 - Só lê a tela. Não clica, não envia, não altera nada no Blip.
 - Máscara (src/puras.js): números com 4+ dígitos, e-mails, nomes comuns (lista RB_NOMES), nomes extras do
   painel, mensagens longas (opção) e a lista de revisão (marcado = escondido).
+- Vazamentos achados nas capturas reais (corrigidos na v1.0.3): nome de uma palavra só (vem do aria-label
+  `Ticket N - Nome`, do `#customer-name` e de `Nome:`), `name` do `bds-avatar`, e ids `wamid.*` (têm o telefone
+  em base64). Fixtures de teste: só dados fictícios, nunca copiar id/telefone de captura real.
+- Mapa de seletores confirmados: `docs/mapa-blip.md`.
 - O painel não entra na captura. Scripts da página não entram. Imagens perdem o `src`.
 - No arquivo: `data-rb-rect="x,y,largura,altura"`, `data-rb-visivel="1|0"`,
   `data-rb-sombra="fechada-ou-vazia"`, `data-rb-iframe="sem-acesso"`, `<meta name="rodbot-captura">`.
