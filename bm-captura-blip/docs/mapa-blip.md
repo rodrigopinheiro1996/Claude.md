@@ -51,7 +51,26 @@ Gerado com `ferramentas/mapear.sh` na captura de 25/11 13h29.
 | Comentário | `#comment-input` → sombra → `textarea` | textbox "Escreva um comentário..." | |
 | Mensagens | `div[id]` (id da mensagem) | "<data hora> Agente diz:" / "Cliente diz:" | dá para separar agente × cliente pelo nome acessível |
 
+## Modal "Transferir atendimento" (captura real de 25/11 14h04, agent-browser)
+
+Abre ao clicar em `#transfer-ticket-button`. Fica em `div#dynamic-modal-main > bds-modal > … > div#transfer-attendance`.
+Não é `<dialog>`: é um `bds-modal` que **cancela cliques fora dele** (o escudo do painel resolve, confirmado na v1.0.2).
+
+| Elemento | Seletor principal | Nome que o agent-browser lê | Observação |
+|---|---|---|---|
+| Esperar o modal abrir | `#transfer-attendance` | — | título: `bds-typo#modal-title` = "Transferir atendimento do Ticket #<n>" |
+| Opção "Fila" | `bds-radio[label="Fila"]` | radio "Fila" (já vem marcada) | o `<input>` de dentro tem id gerado (`bds-radio-0`): **não usar** |
+| Opção "Atendente" | `bds-radio[label="Atendente"]` | radio "Atendente" | idem |
+| Lista de filas | `#autocompleteTeam` (`bds-autocomplete`, fora de sombra) | "Selecionar fila" + textbox | o campo de digitar está na sombra dele |
+| Opções da lista | `#autocompleteTeam` → sombra → `bds-select-option` | button "<fila> <n> Disponíveis" | **já existem na tela mesmo com a lista fechada**; texto da fila = texto do `bds-select-option` |
+| Lista de filas (dados) | atributo `options` do `#autocompleteTeam` | — | JSON: `[{label, value: '{"name":…,"agentsOnline":…}', status: "25 Disponíveis"}]`. Dá para conferir se a fila existe **antes** de abrir a lista |
+| Transferir ticket | `#confirm-transfer-btn` | button "Transferir ticket" | começa com `disabled="true"`: só libera depois de escolher a fila. **É o clique final de envio** |
+| Cancelar | `#transfer-attendance bds-button[variant="secondary"]` com texto "Cancelar" | button "Cancelar" | sem id |
+| Fechar (X) | ícone "close" do `bds-modal` | image "close" | |
+
+Para um BM de transferir: modo Simular = abrir modal → escolher fila → conferir que `#confirm-transfer-btn` liberou →
+**Cancelar** (sem clicar em "Transferir ticket").
+
 ## Ainda falta capturar
-- **Modal "Transferir atendimento"** (aberto, com a lista "Selecionar fila" aberta e com a opção "Atendente").
-  Nenhuma das capturas de 25/11 pegou o modal. O painel v1.0.0/v1.0.1 não responde com o modal aberto;
-  usar a v1.0.3 (escudo).
+- Opção **"Atendente"** marcada (a lista muda para atendentes; não capturado).
+- Por que o painel trava com a lista "Selecionar fila" **aberta** (não precisa para mapear: as opções já vêm na captura com a lista fechada).
