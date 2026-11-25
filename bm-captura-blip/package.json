@@ -1,0 +1,10 @@
+{
+  "name": "bm-captura-blip",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BM que salva a tela do Blip (com Shadow DOM) num arquivo, com dados de clientes mascarados",
+  "scripts": {
+    "build": "node build.js",
+    "test": "node --test tests/*.test.js"
+  }
+}

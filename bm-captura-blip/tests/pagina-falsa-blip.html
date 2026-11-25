@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Página FALSA do Blip para teste. Estrutura DEDUZIDA (componentes bds-* com Shadow DOM e slot),
+     não copiada do site real. Dados de cliente são fictícios. -->
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Blip Desk (falso)</title>
+<style>body{font-family:sans-serif} .oculto{display:none}</style></head>
+<body>
+  <header><bds-typo id="atendente">Atendente Rodrigo Pinheiro</bds-typo></header>
+  <ul id="fila">
+    <li class="ticket"><bds-typo>Maria da Silva Souza</bds-typo> <span class="tel">88993505390 ; 85996918465</span></li>
+    <li class="ticket"><bds-typo>Kleber Nogueira</bds-typo> <span class="mail">kleber.n@gmail.com</span></li>
+  </ul>
+  <div class="aviso"><bds-typo>Este contato já está em atendimento</bds-typo></div>
+  <bds-button id="enviar" variant="primary">Resposta Privada</bds-button>
+  <input id="busca" type="text">
+  <div class="oculto" id="escondido">menu fechado</div>
+  <iframe id="quadro" srcdoc="<p id='dentro'>CPF 123.456.789-09</p>"></iframe>
+<script>
+  const folha = new CSSStyleSheet(); folha.replaceSync('button{color:rgb(255, 0, 0)}');
+  customElements.define('bds-typo', class extends HTMLElement {
+    constructor(){ super(); this.attachShadow({mode:'open'}).innerHTML = '<p class="typo"><slot></slot></p>'; }
+  });
+  customElements.define('bds-button', class extends HTMLElement {
+    constructor(){ super(); const r = this.attachShadow({mode:'open'}); r.adoptedStyleSheets=[folha];
+      r.innerHTML = '<button class="button" part="button"><slot></slot></button>'; }
+  });
+  document.getElementById('busca').value = 'João Pereira 85996918465';
+</script>
+</body></html>
