@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fila de CPF v1.1.0</title>
+<style>
+  :root { --azul:#0a84ff; --borda:#d0d7e2; --fundo:#f5f7fb; --texto:#1d2433; --cinza:#6b7385; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Segoe UI, Arial, sans-serif; background:var(--fundo); color:var(--texto); }
+  .pagina { max-width:640px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; margin:8px 0 4px; }
+  .versao { color:var(--cinza); font-size:13px; }
+  .caixa { background:#fff; border:1px solid var(--borda); border-radius:12px; padding:14px; margin-top:14px; }
+  textarea { width:100%; min-height:140px; font:14px Consolas, monospace; padding:8px; border:1px solid var(--borda); border-radius:8px; }
+  button { font:inherit; cursor:pointer; border-radius:999px; border:1px solid var(--borda); background:#fff; padding:8px 14px; }
+  button.principal { background:var(--azul); color:#fff; border-color:var(--azul); font-weight:600; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .linha { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+  label { font-size:14px; }
+  .aviso { font-size:13px; color:#9a5b00; margin-top:8px; }
+  ol { padding-left:20px; font-size:14px; line-height:1.5; }
+  /* Lista (usada na página e na janela flutuante) */
+  .fila-topo { display:flex; justify-content:space-between; align-items:center; gap:6px; padding:6px 8px; background:var(--azul); color:#fff; font-size:13px; position:sticky; top:0; }
+  .fila-topo button { padding:2px 8px; font-size:12px; background:#fff; color:var(--azul); border:none; }
+  .fila-msg { font-size:12px; padding:4px 8px; min-height:22px; color:#0b6b2f; background:#e8f7ee; }
+  .fila-lista { list-style:none; margin:0; padding:6px; }
+  .fila-lista li { margin:0 0 4px; }
+  .fila-lista button { width:100%; text-align:left; border-radius:8px; font:15px Consolas, monospace; padding:7px 10px; }
+  .fila-lista li:first-child button { border-color:var(--azul); background:#eaf3ff; font-weight:700; }
+  .fila-lista button:hover { background:#dcecff; }
+  .fila-frases { list-style:none; margin:0; padding:6px 6px 0; border-bottom:1px dashed var(--borda); }
+  .fila-frases li { margin:0 0 6px; }
+  .fila-frases button { width:100%; text-align:left; border-radius:8px; font-size:13px; padding:6px 10px; background:#fff8e6; border-color:#f0c36d; white-space:pre-wrap; }
+  .fila-frases button:hover { background:#ffefc4; }
+  .fila-vazia { padding:12px; color:var(--cinza); font-size:14px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <h1>📋 Fila de CPF</h1>
+  <div class="versao">versão 1.1.0</div>
+
+  <div class="caixa">
+    <b>1. Cole os CPFs</b> (um por linha; pode colar direto da coluna do Excel)
+    <textarea id="entrada" placeholder="123.456.789-09&#10;98765432100&#10;..."></textarea>
+    <div class="linha">
+      <label><input type="checkbox" id="soNumeros" checked> Copiar só números (sem ponto e traço)</label>
+    </div>
+    <div class="linha">
+      <button class="principal" id="btnCarregar">Carregar lista</button>
+      <button id="btnLimpar">Apagar fila</button>
+    </div>
+    <div class="aviso" id="avisoCarga"></div>
+  </div>
+
+  <div class="caixa">
+    <b>Frases fixas</b> (uma por linha). Ficam no topo da janela e <b>não somem</b> ao clicar.
+    <textarea id="frases" style="min-height:80px; font-family:inherit" placeholder="Escreva aqui a sua frase"></textarea>
+    <div class="linha">
+      <button class="principal" id="btnFrases">Salvar frases</button>
+    </div>
+    <div class="aviso" id="avisoFrases"></div>
+  </div>
+
+  <div class="caixa">
+    <b>2. Abra a janela flutuante</b>
+    <div class="linha">
+      <button class="principal" id="btnFlutuante">🪟 Abrir janela flutuante</button>
+    </div>
+    <div class="aviso" id="avisoFlutuante"></div>
+  </div>
+
+  <div class="caixa" style="padding:0; overflow:hidden">
+    <div id="filaPagina"></div>
+  </div>
+
+  <div class="caixa">
+    <b>Como usar</b>
+    <ol>
+      <li>Cole os CPFs e clique em <b>Carregar lista</b>.</li>
+      <li>Clique em <b>Abrir janela flutuante</b> e arraste a janelinha para um canto da tela do Hub.</li>
+      <li>Clique num CPF: ele é copiado e some da fila. O próximo sobe para o topo.</li>
+      <li>No Hub, clique em "Buscar" e aperte <b>Ctrl+V</b>.</li>
+      <li>Clicou errado? Use <b>↩ Desfazer</b>: o CPF volta para o topo.</li>
+      <li>As frases fixas (📌, em amarelo) ficam sempre no topo: clique para copiar, elas não somem.</li>
+    </ol>
+    <div class="aviso">A fila fica salva neste navegador. Se fechar a janela, é só abrir de novo que ela continua de onde parou.</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var CHAVE = 'filaCpf.v1';
+
+  // ---------- Funções puras ----------
+  function soDigitos(t) { return String(t || '').replace(/\D/g, ''); }
+
+  // Excel costuma apagar o zero da frente do CPF (ex.: 01234567890 -> 1234567890).
+  function normalizar(t) {
+    var d = soDigitos(t);
+    if (!d) return null;
+    if (d.length >= 8 && d.length < 11) d = d.padStart(11, '0');
+    return d;
+  }
+
+  function formatar(d) {
+    if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+    if (d.length === 14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    return d;
+  }
+
+  // Lê o texto colado: uma linha = um CPF. Ignora linhas vazias e o cabeçalho.
+  function lerLista(texto) {
+    var itens = [], vistos = {}, repetidos = 0, estranhos = 0;
+    String(texto || '').split(/\r?\n/).forEach(function (linha) {
+      var d = normalizar(linha);
+      if (!d) return;
+      if (vistos[d]) { repetidos++; return; }
+      vistos[d] = true;
+      if (d.length !== 11 && d.length !== 14) estranhos++;
+      itens.push(d);
+    });
+    return { itens: itens, repetidos: repetidos, estranhos: estranhos };
+  }
+
+  // ---------- Estado ----------
+  var estado = { fila: [], usados: [] };
+  function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch (e) {} }
+  function carregar() {
+    try {
+      var s = JSON.parse(localStorage.getItem(CHAVE) || 'null');
+      if (s && Array.isArray(s.fila)) estado = { fila: s.fila, usados: s.usados || [] };
+    } catch (e) {}
+  }
+
+  var soNumeros = document.getElementById('soNumeros');
+  function textoParaCopiar(d) { return soNumeros.checked ? d : formatar(d); }
+
+  // ---------- Copiar ----------
+  function copiar(doc, texto) {
+    var win = doc.defaultView;
+    var reserva = function () {
+      var ta = doc.createElement('textarea');
+      ta.value = texto; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      doc.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = doc.execCommand('copy'); } catch (e) {}
+      ta.remove();
+      return ok ? Promise.resolve() : Promise.reject(new Error('cópia bloqueada'));
+    };
+    if (win.navigator.clipboard && win.navigator.clipboard.writeText) {
+      return win.navigator.clipboard.writeText(texto).catch(reserva);
+    }
+    return reserva();
+  }
+
+  // ---------- Tela da fila (mesma para a página e para a janela flutuante) ----------
+  var telas = []; // { doc, raiz }
+  var ultimaMsg = '';
+
+  function desenhar(t) {
+    var doc = t.doc, raiz = t.raiz;
+    raiz.innerHTML = '';
+    var topo = doc.createElement('div'); topo.className = 'fila-topo';
+    var cont = doc.createElement('span');
+    cont.textContent = estado.fila.length + ' na fila';
+    var desf = doc.createElement('button');
+    desf.textContent = '↩ Desfazer'; desf.disabled = !estado.usados.length;
+    desf.title = 'Volta o último CPF copiado para o topo';
+    desf.addEventListener('click', desfazer);
+    topo.appendChild(cont); topo.appendChild(desf);
+    raiz.appendChild(topo);
+
+    var msg = doc.createElement('div'); msg.className = 'fila-msg'; msg.textContent = ultimaMsg;
+    raiz.appendChild(msg);
+
+    if (frases.length) {
+      var uf = doc.createElement('ul'); uf.className = 'fila-frases';
+      frases.forEach(function (f) {
+        var li = doc.createElement('li');
+        var b = doc.createElement('button');
+        b.textContent = '📌 ' + f;
+        b.title = 'Copia a frase (ela continua aqui)';
+        b.addEventListener('click', function () { copiarFrase(doc, f); });
+        li.appendChild(b); uf.appendChild(li);
+      });
+      raiz.appendChild(uf);
+    }
+
+    if (!estado.fila.length) {
+      var v = doc.createElement('div'); v.className = 'fila-vazia'; v.textContent = 'Fila vazia.';
+      raiz.appendChild(v);
+      return;
+    }
+    var ul = doc.createElement('ul'); ul.className = 'fila-lista';
+    estado.fila.forEach(function (d, i) {
+      var li = doc.createElement('li');
+      var b = doc.createElement('button');
+      b.textContent = formatar(d);
+      b.dataset.cpf = d;
+      b.addEventListener('click', function () { usar(doc, i); });
+      li.appendChild(b); ul.appendChild(li);
+    });
+    raiz.appendChild(ul);
+  }
+
+  function atualizarTudo() {
+    telas = telas.filter(function (t) { return !t.doc.defaultView || !t.doc.defaultView.closed; });
+    telas.forEach(desenhar);
+  }
+
+  function usar(doc, i) {
+    var d = estado.fila[i];
+    if (!d) return;
+    var texto = textoParaCopiar(d);
+    copiar(doc, texto).then(function () {
+      estado.fila.splice(i, 1);
+      estado.usados.push({ cpf: d, pos: i });
+      if (estado.usados.length > 50) estado.usados.shift();
+      ultimaMsg = '✔ Copiado: ' + formatar(d);
+      salvar(); atualizarTudo();
+    }, function () {
+      // Não remove da fila se a cópia falhou: o CPF não pode se perder.
+      ultimaMsg = '⚠ Não consegui copiar. Tente de novo.';
+      atualizarTudo();
+    });
+  }
+
+  // Frases fixas: copia e NÃO remove.
+  var frases = [];
+  function lerFrases(texto) {
+    return String(texto || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+  }
+  function copiarFrase(doc, f) {
+    copiar(doc, f).then(function () {
+      ultimaMsg = '✔ Frase copiada';
+      atualizarTudo();
+    }, function () {
+      ultimaMsg = '⚠ Não consegui copiar. Tente de novo.';
+      atualizarTudo();
+    });
+  }
+
+  function desfazer() {
+    var u = estado.usados.pop();
+    if (!u) return;
+    estado.fila.unshift(u.cpf);
+    ultimaMsg = '↩ Voltou para o topo: ' + formatar(u.cpf);
+    salvar(); atualizarTudo();
+  }
+
+  // ---------- Página ----------
+  telas.push({ doc: document, raiz: document.getElementById('filaPagina') });
+
+  document.getElementById('btnCarregar').addEventListener('click', function () {
+    var r = lerLista(document.getElementById('entrada').value);
+    var aviso = document.getElementById('avisoCarga');
+    if (!r.itens.length) { aviso.textContent = 'Nenhum CPF encontrado no texto colado.'; return; }
+    if (estado.fila.length && !confirm('Já existe uma fila com ' + estado.fila.length + ' CPF(s). Trocar pela nova lista?')) return;
+    estado = { fila: r.itens, usados: [] };
+    ultimaMsg = '';
+    var partes = [r.itens.length + ' CPF(s) carregado(s).'];
+    if (r.repetidos) partes.push(r.repetidos + ' repetido(s) ignorado(s).');
+    if (r.estranhos) partes.push(r.estranhos + ' com quantidade de dígitos diferente de CPF/CNPJ (confira).');
+    aviso.textContent = partes.join(' ');
+    salvar(); atualizarTudo();
+  });
+
+  document.getElementById('btnLimpar').addEventListener('click', function () {
+    if (!estado.fila.length || !confirm('Apagar a fila inteira?')) return;
+    estado = { fila: [], usados: [] }; ultimaMsg = '';
+    salvar(); atualizarTudo();
+  });
+
+  var campoFrases = document.getElementById('frases');
+  try { campoFrases.value = localStorage.getItem(CHAVE + '.frases') || ''; } catch (e) {}
+  frases = lerFrases(campoFrases.value);
+  document.getElementById('btnFrases').addEventListener('click', function () {
+    frases = lerFrases(campoFrases.value);
+    try { localStorage.setItem(CHAVE + '.frases', campoFrases.value); } catch (e) {}
+    document.getElementById('avisoFrases').textContent = frases.length + ' frase(s) salva(s).';
+    atualizarTudo();
+  });
+
+  soNumeros.addEventListener('change', function () {
+    try { localStorage.setItem(CHAVE + '.soNumeros', soNumeros.checked ? '1' : '0'); } catch (e) {}
+  });
+  try { var sn = localStorage.getItem(CHAVE + '.soNumeros'); if (sn) soNumeros.checked = sn === '1'; } catch (e) {}
+
+  // ---------- Janela flutuante (sempre por cima) ----------
+  var janela = null;
+  document.getElementById('btnFlutuante').addEventListener('click', function () {
+    var aviso = document.getElementById('avisoFlutuante');
+    if (janela && !janela.closed) { janela.focus(); return; }
+    if (!('documentPictureInPicture' in window)) {
+      aviso.textContent = 'Este navegador não tem a janela flutuante. Use o Edge ou o Chrome atualizado (versão 116 ou mais nova).';
+      return;
+    }
+    window.documentPictureInPicture.requestWindow({ width: 240, height: 420 }).then(function (pip) {
+      janela = pip;
+      var estilo = pip.document.createElement('style');
+      estilo.textContent = document.querySelector('style').textContent;
+      pip.document.head.appendChild(estilo);
+      pip.document.title = 'Fila de CPF';
+      var raiz = pip.document.createElement('div');
+      pip.document.body.appendChild(raiz);
+      telas.push({ doc: pip.document, raiz: raiz });
+      pip.addEventListener('pagehide', function () { janela = null; setTimeout(atualizarTudo, 0); });
+      aviso.textContent = '';
+      atualizarTudo();
+    }, function (e) {
+      aviso.textContent = 'Não consegui abrir a janela flutuante: ' + (e && e.message ? e.message : e);
+    });
+  });
+
+  // Expõe para testes
+  window.__filaCpf = { lerLista: lerLista, normalizar: normalizar, formatar: formatar };
+
+  carregar();
+  atualizarTudo();
+})();
+</script>
+</body>
+</html>
