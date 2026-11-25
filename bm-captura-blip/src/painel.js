@@ -80,7 +80,8 @@ function rbIniciar() {
     window.addEventListener('mouseup', function () { arrastando = false; });
   })();
   $('.bmin').addEventListener('click', function () { painel.classList.toggle('min'); });
-  $('.bfec').addEventListener('click', function () { host.remove(); });
+  var guarda = null;
+  $('.bfec').addEventListener('click', function () { if (guarda) guarda.parar(); host.remove(); });
 
   var captura = null; // { arvore, css, info, quando, opts, candidatos }
 
@@ -181,6 +182,8 @@ function rbIniciar() {
       capturar();
     }, 1000);
   });
+
+  guarda = rbManterClicavel(host, sr, log);
 
   log('Pronto. Deixe a tela do Blip do jeito que quer salvar e clique em Capturar.');
 }

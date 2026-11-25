@@ -13,6 +13,8 @@
   <bds-button id="enviar" variant="primary">Resposta Privada</bds-button>
   <input id="busca" type="text">
   <div class="oculto" id="escondido">menu fechado</div>
+  <!-- DEDUZIDO: modal de transferir como <dialog> aberto com showModal() dentro da sombra de um bds-modal -->
+  <bds-modal id="modal-transferir"></bds-modal>
   <iframe id="quadro" srcdoc="<p id='dentro'>CPF 123.456.789-09</p>"></iframe>
 <script>
   const folha = new CSSStyleSheet(); folha.replaceSync('button{color:rgb(255, 0, 0)}');
@@ -22,6 +24,12 @@
   customElements.define('bds-button', class extends HTMLElement {
     constructor(){ super(); const r = this.attachShadow({mode:'open'}); r.adoptedStyleSheets=[folha];
       r.innerHTML = '<button class="button" part="button"><slot></slot></button>'; }
+  });
+  customElements.define('bds-modal', class extends HTMLElement {
+    constructor(){ super(); this.attachShadow({mode:'open'}).innerHTML =
+      '<dialog id="dlg" style="width:500px;height:400px"><h2>Transferir atendimento do Ticket #3227967</h2><button id="cancelar">Cancelar</button></dialog>'; }
+    abrir(){ this.shadowRoot.getElementById('dlg').showModal(); }
+    fechar(){ this.shadowRoot.getElementById('dlg').close(); }
   });
   document.getElementById('busca').value = 'João Pereira 85996918465';
 </script>

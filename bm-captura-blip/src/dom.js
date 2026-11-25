@@ -10,7 +10,7 @@ function rbTextoDaFolha(folha) {
 function rbCapturarArvore(ignorar) {
   var cssIds = {};      // texto css -> número
   var css = [];         // lista de textos css (vai uma vez só no arquivo)
-  var info = { elementos: 0, sombras: 0, sombrasFechadas: 0, iframes: 0, iframesSemAcesso: 0 };
+  var info = { modais: 0, inert: 0, elementos: 0, sombras: 0, sombrasFechadas: 0, iframes: 0, iframesSemAcesso: 0 };
 
   function idCss(texto) {
     if (texto == null || texto === '') return null;
@@ -83,6 +83,9 @@ function rbCapturarArvore(ignorar) {
       attrs.push(['data-rb-rect', [r.x, r.y, r.width, r.height].map(Math.round).join(',')]);
       attrs.push(['data-rb-visivel', vis ? '1' : '0']);
     }
+
+    if (tag === 'dialog' && n.open && n.matches(':modal')) { info.modais++; attrs.push(['data-rb-modal', '1']); }
+    if (n.hasAttribute('inert')) info.inert++;
 
     var no = { t: 'el', tag: tag, attrs: attrs, kids: null, sombra: null };
 

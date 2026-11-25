@@ -1,7 +1,7 @@
 // Funções puras (sem DOM): máscara de dados pessoais e montagem do arquivo HTML.
 // Testadas no Node (tests/puras.test.js).
 
-var RB_VERSAO = '1.0.0';
+var RB_VERSAO = '1.0.1';
 
 // Primeiros nomes comuns no Brasil (sem acento, minúsculos). Se uma sequência de
 // palavras com inicial maiúscula tiver um destes, ela vira "Nome Fictício".

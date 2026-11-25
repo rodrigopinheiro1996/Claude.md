@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { RB_VERSAO } = require('./src/puras.js');
 
-const ORDEM = ['puras.js', 'dom.js', 'painel.js'];
+const ORDEM = ['puras.js', 'dom.js', 'manter-clicavel.js', 'painel.js'];
 
 function montarCodigo() {
   const partes = ORDEM.map(f => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8'));

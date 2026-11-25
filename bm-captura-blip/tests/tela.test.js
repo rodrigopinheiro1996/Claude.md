@@ -74,6 +74,6 @@ test('captura atravessa Shadow DOM, mascara dados e gera arquivo que reabre igua
   assert.match(r.rect, /^\d+,\d+,\d+,\d+$/);
   assert.strictEqual(r.busca, 'Nome Fictício 12345678901');
   assert.match(r.iframe, /CPF 123\.456\.789-01/);
-  assert.strictEqual(r.meta.versao, '1.0.0');
+  assert.strictEqual(r.meta.versao, '1.0.1');
   assert.ok(r.meta.info.sombras >= 5);
 });
