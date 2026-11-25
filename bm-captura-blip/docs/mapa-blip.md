@@ -26,6 +26,31 @@ Só seletores e textos da tela; nenhum dado de cliente.
 - A página tem ~5.000 elementos e ~550 componentes com Shadow DOM aberto. Nenhuma sombra fechada.
 - Os 4 iframes da página estão vazios (não são a conversa).
 
+## Nomes que o agent-browser lê (seletor reserva)
+
+O agent-browser lê a tela como um leitor de tela: cada botão tem um **nome acessível**. Esse nome é um bom
+**seletor reserva** quando o id mudar (ex.: procurar o botão cujo `aria-label`/texto é "Transferir").
+Gerado com `ferramentas/mapear.sh` na captura de 25/11 13h29.
+
+| Elemento | Seletor principal | Nome que o agent-browser lê | Observação |
+|---|---|---|---|
+| Atender | `#claim-ticket-button` | button "Atender" | o `bds-button` tem `aria-hidden="true"`: o botão clicável de verdade está dentro da sombra |
+| Mensagem ativa | (sem id) `bds-button[variant="ghost"]` com texto "Mensagem ativa" | button "Mensagem ativa" | achar pelo texto |
+| Busca de conversas | `#search-input` → sombra → `input.input__container__text` | textbox "Busque pelo nome ou telefone..." | o campo de verdade está dentro da sombra do `bds-input` |
+| Filtros | `#ticket-filter-dropdown` | buttons "Todos (n)", "Não lidos (n)", "Em espera (n)", "Finalizados (n)" | o número muda: comparar só o começo |
+| Item da conversa | `article[id$="-chat-list-item"]` | navigation "Ticket <n> - <nome>" | |
+| Pesquisar na conversa | `bds-button-icon[icon="search"]` | button "Pesquisar na conversa" | |
+| **Transferir** | `#transfer-ticket-button` | button "Transferir" | nome vem do wrapper com título "Transferir" |
+| **Finalizar** | `#close-ticket-button` | button "Finalizar" | fica dentro de `bds-tooltip[tooltip-text="Finalizar"]` |
+| **Caixa de mensagem** | `#text-input` (textarea, **fora** de sombra) | textbox "Escreva uma mensagem..." | |
+| Resposta pronta | `#custom-reply-btn` | button "Enviar resposta pronta" | `icon="ab"` |
+| Anexar arquivo | `#send-file-btn` | button "Enviar arquivos (máximo de 10 arquivos por envio)" | `icon="attach"` |
+| Emojis / Áudio | `bds-button-icon[icon="emoji"]` / `[icon="audio"]` | "Adicionar emojis" / "Enviar um áudio" | |
+| Sugestões | `[data-testid="suggestions-button"]` | (sem nome) | |
+| Abas da direita | `bds-typo` com texto "Informações", "Histórico", "Falar com gestor" | mesmos textos | sem id: achar pelo texto |
+| Comentário | `#comment-input` → sombra → `textarea` | textbox "Escreva um comentário..." | |
+| Mensagens | `div[id]` (id da mensagem) | "<data hora> Agente diz:" / "Cliente diz:" | dá para separar agente × cliente pelo nome acessível |
+
 ## Ainda falta capturar
 - **Modal "Transferir atendimento"** (aberto, com a lista "Selecionar fila" aberta e com a opção "Atendente").
   Nenhuma das capturas de 25/11 pegou o modal. O painel v1.0.0/v1.0.1 não responde com o modal aberto;

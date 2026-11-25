@@ -27,6 +27,8 @@ elementos e montar/testar os BMs em cima de uma cópia fiel da tela real.
 
 ## Comandos
 - `npm run build`: gera `dist/RodBot-captura-blip-vX.Y.Z.html` (não edite o dist à mão)
+- `ferramentas/mapear.sh <captura.html>`: abre a captura no agent-browser (offline) e gera a lista de elementos
+  com o nome acessível de cada um. Requer `npm i -g agent-browser` (usa o Chromium já instalado).
 - `npm test`: máscara, sincronia dist↔src, e teste de tela na página falsa (`tests/pagina-falsa-blip.html`)
 
 ## Deduzido (não confirmado no Blip real)
