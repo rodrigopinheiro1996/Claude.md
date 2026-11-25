@@ -61,27 +61,60 @@ function rbIniciar() {
     l.scrollTop = l.scrollHeight;
   }
 
-  // Arrastar pela barra superior
-  (function () {
-    var topo = $('.topo'), dx = 0, dy = 0, arrastando = false;
-    topo.addEventListener('mousedown', function (e) {
-      if (e.target.tagName === 'BUTTON') return;
-      arrastando = true;
-      var r = host.getBoundingClientRect();
-      dx = e.clientX - r.left; dy = e.clientY - r.top;
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', function (e) {
-      if (!arrastando) return;
-      host.style.left = Math.max(0, e.clientX - dx) + 'px';
-      host.style.top = Math.max(0, e.clientY - dy) + 'px';
-      host.style.right = 'auto';
-    });
-    window.addEventListener('mouseup', function () { arrastando = false; });
-  })();
-  $('.bmin').addEventListener('click', function () { painel.classList.toggle('min'); });
+  // ---------- Escudo contra modais do site ----------
+  // Alguns modais do Blip (ex.: "Transferir atendimento") cancelam todo clique fora deles.
+  // O escudo pega os eventos do painel ANTES do site (na janela, fase de captura), impede que
+  // cheguem ao site e executa a ação do botão. Digitação, foco e caixinhas seguem normais.
+  var acoes = [];
+  function ao(el, fn) { acoes.push([el, fn]); }
+
+  var arrasto = { ativo: false, dx: 0, dy: 0 };
+  function moverArrasto(e) {
+    if (!arrasto.ativo) return;
+    host.style.left = Math.max(0, e.clientX - arrasto.dx) + 'px';
+    host.style.top = Math.max(0, e.clientY - arrasto.dy) + 'px';
+    host.style.right = 'auto';
+    e.preventDefault();
+  }
+  function soltarArrasto() { arrasto.ativo = false; }
+
+  function escudo(e) {
+    var cam = e.composedPath ? e.composedPath() : [];
+    if (cam.indexOf(host) === -1) return;
+    e.stopImmediatePropagation();
+    if (e.type === 'click') {
+      for (var i = 0; i < cam.length && cam[i] !== host; i++) {
+        for (var j = 0; j < acoes.length; j++) {
+          if (acoes[j][0] === cam[i]) { if (!cam[i].disabled) acoes[j][1](e); return; }
+        }
+      }
+    } else if (e.type === 'mousedown' && e.button === 0) {
+      var topo = $('.topo');
+      if (cam.indexOf(topo) !== -1 && (!cam[0] || cam[0].tagName !== 'BUTTON')) {
+        var r = host.getBoundingClientRect();
+        arrasto = { ativo: true, dx: e.clientX - r.left, dy: e.clientY - r.top };
+        e.preventDefault();
+      }
+    } else if (e.type === 'mouseup') {
+      soltarArrasto();
+    }
+  }
+
+  var EVENTOS = ['click', 'dblclick', 'auxclick', 'contextmenu', 'mousedown', 'mouseup', 'pointerdown', 'pointerup',
+    'touchstart', 'touchend', 'keydown', 'keyup', 'keypress', 'beforeinput', 'input', 'focusin', 'focusout',
+    'focus', 'blur', 'wheel', 'touchmove', 'paste', 'copy', 'cut', 'selectstart'];
+  window.addEventListener('mousemove', moverArrasto, true);
+  window.addEventListener('mouseup', soltarArrasto, true);
+  EVENTOS.forEach(function (t) { window.addEventListener(t, escudo, { capture: true, passive: false }); });
+  function tirarEscudo() {
+    EVENTOS.forEach(function (t) { window.removeEventListener(t, escudo, { capture: true }); });
+    window.removeEventListener('mousemove', moverArrasto, true);
+    window.removeEventListener('mouseup', soltarArrasto, true);
+  }
+
+  ao($('.bmin'), function () { painel.classList.toggle('min'); });
   var guarda = null;
-  $('.bfec').addEventListener('click', function () { if (guarda) guarda.parar(); host.remove(); });
+  ao($('.bfec'), function () { if (guarda) guarda.parar(); tirarEscudo(); host.remove(); });
 
   var captura = null; // { arvore, css, info, quando, opts, candidatos }
 
@@ -129,12 +162,12 @@ function rbIniciar() {
   function marcar(v) {
     Array.prototype.forEach.call(sr.querySelectorAll('.lista input'), function (cb) { cb.checked = v; });
   }
-  $('.btodos').addEventListener('click', function () { marcar(true); });
-  $('.bnenhum').addEventListener('click', function () { marcar(false); });
+  ao($('.btodos'), function () { marcar(true); });
+  ao($('.bnenhum'), function () { marcar(false); });
 
   function doisDig(n) { return (n < 10 ? '0' : '') + n; }
 
-  $('.bbaixar').addEventListener('click', function () {
+  ao($('.bbaixar'), function () {
     if (!captura) return;
     try {
       var esconder = {};
@@ -168,8 +201,8 @@ function rbIniciar() {
 
   var botoes = [$('.bcap'), $('.bcap5')];
   function travar(v) { botoes.forEach(function (b) { b.disabled = v; }); }
-  $('.bcap').addEventListener('click', capturar);
-  $('.bcap5').addEventListener('click', function () {
+  ao($('.bcap'), capturar);
+  ao($('.bcap5'), function () {
     var falta = 5;
     travar(true);
     log('Capturando em 5 s: abra agora o menu ou aviso que quer salvar.');

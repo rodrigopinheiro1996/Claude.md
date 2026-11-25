@@ -16,6 +16,10 @@ elementos e montar/testar os BMs em cima de uma cópia fiel da tela real.
 
 - Modal que trava a tela (ex.: "Transferir atendimento"): `src/manter-clicavel.js` move o painel para dentro do
   `<dialog>` modal aberto e devolve quando fecha. Serve para outros BMs também. Na captura: `data-rb-modal="1"`.
+- Modal que cancela cliques fora dele (CONFIRMADO no Blip real, v1.0.1: painel aparecia por cima mas não
+  respondia): o "escudo" em `src/painel.js` ouve os eventos na `window` (fase de captura), para a propagação
+  quando o evento é no painel e executa a ação do botão (`ao(elemento, função)`). Não use `addEventListener('click')`
+  nos botões do painel: registre com `ao()`.
 
 ## Comandos
 - `npm run build`: gera `dist/RodBot-captura-blip-vX.Y.Z.html` (não edite o dist à mão)
@@ -23,4 +27,5 @@ elementos e montar/testar os BMs em cima de uma cópia fiel da tela real.
 
 ## Deduzido (não confirmado no Blip real)
 - Estrutura da página falsa (bds-typo/bds-button com slot) é suposição. Validar com a primeira captura real.
-- Que o modal "Transferir atendimento" do Blip é um `<dialog>` aberto com showModal(). Validar no Blip real.
+- Que o modal "Transferir atendimento" cancela os cliques com ouvintes no `document` (como bibliotecas de
+  "focus trap"). Se o Blip ouvir na `window` antes do BM, o escudo não resolve. Validar no Blip real.

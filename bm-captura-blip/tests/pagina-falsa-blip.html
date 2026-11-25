@@ -15,6 +15,9 @@
   <div class="oculto" id="escondido">menu fechado</div>
   <!-- DEDUZIDO: modal de transferir como <dialog> aberto com showModal() dentro da sombra de um bds-modal -->
   <bds-modal id="modal-transferir"></bds-modal>
+  <!-- DEDUZIDO: modal que intercepta cliques fora dele (como bibliotecas de "focus trap"):
+       fundo escuro comum + ouvintes na fase de captura do document que cancelam o evento -->
+  <bds-modal-trava id="modal-trava"></bds-modal-trava>
   <iframe id="quadro" srcdoc="<p id='dentro'>CPF 123.456.789-09</p>"></iframe>
 <script>
   const folha = new CSSStyleSheet(); folha.replaceSync('button{color:rgb(255, 0, 0)}');
@@ -30,6 +33,23 @@
       '<dialog id="dlg" style="width:500px;height:400px"><h2>Transferir atendimento do Ticket #3227967</h2><button id="cancelar">Cancelar</button></dialog>'; }
     abrir(){ this.shadowRoot.getElementById('dlg').showModal(); }
     fechar(){ this.shadowRoot.getElementById('dlg').close(); }
+  });
+  customElements.define('bds-modal-trava', class extends HTMLElement {
+    constructor(){ super(); this.attachShadow({mode:'open'}).innerHTML =
+      '<div id="fundo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000">' +
+      '<div id="caixa" style="background:#fff;width:500px;margin:80px auto;padding:20px">' +
+      '<h2>Transferir atendimento do Ticket #3228038</h2><button id="cancelar">Cancelar</button></div></div>';
+      const caixa = this.shadowRoot.getElementById('caixa');
+      const fora = e => !e.composedPath().includes(caixa);
+      this._bloq = e => { if (fora(e)) { e.preventDefault(); e.stopImmediatePropagation(); } };
+      this._foco = e => { if (fora(e)) { e.stopImmediatePropagation(); this.shadowRoot.getElementById('cancelar').focus(); } };
+    }
+    abrir(){ this.shadowRoot.getElementById('fundo').style.display='block';
+      ['mousedown','pointerdown','touchstart','click','keydown','wheel'].forEach(t=>document.addEventListener(t,this._bloq,{capture:true,passive:false}));
+      document.addEventListener('focusin',this._foco,true); }
+    fechar(){ this.shadowRoot.getElementById('fundo').style.display='none';
+      ['mousedown','pointerdown','touchstart','click','keydown','wheel'].forEach(t=>document.removeEventListener(t,this._bloq,{capture:true}));
+      document.removeEventListener('focusin',this._foco,true); }
   });
   document.getElementById('busca').value = 'João Pereira 85996918465';
 </script>
