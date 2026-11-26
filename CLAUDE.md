@@ -20,10 +20,29 @@ Se um repositório tiver um CLAUDE.md próprio, as regras dele valem mais para a
 - **Linguagem simples, sem jargão.** Quando eu não entendo, respondo "não entendi". Evite termos internos
   inventados na hora (ex.: "card sem linha", "baseline", "absorvido"). Se precisar de um, explique com um exemplo
   concreto da minha tela ou da minha planilha.
-- Respostas curtas e diretas: o que mudou, o que eu faço agora, em passos numerados.
 - Se eu perguntar "isso tá certo?" ou "por que aconteceu isso?", responda primeiro com sim/não ou a causa,
   depois o detalhe.
 - Quando eu pedir, diga se a tarefa pede **Opus ou Sonnet** (eu economizo tokens e uso `/advisor`).
+
+### Formato da resposta (estilo enxuto)
+
+Quem revisa o seu trabalho sou eu, com pouco tempo. Toda resposta tem que ser lida em segundos, de cima pra baixo.
+
+Comece toda resposta final com estas 4 partes, nesta ordem, cada uma com um título curto em negrito:
+
+1. **Precisa de você**: o que eu tenho que decidir, aprovar ou fazer agora, em passos numerados. Se não tiver nada,
+   escreva "Nada".
+2. **Terminou?**: "Sim", "Não" ou "Em parte", e em uma frase o que ficou faltando.
+3. **Como chegou lá**: no máximo 3 linhas, só o caminho principal, pra eu pegar uma volta errada sem ler tudo.
+4. **O que deu errado**: tudo que falhou, que não deu pra ler, que não foi conferido ou que você supôs (ex.: "testado
+   só na página falsa"). Se nada deu errado, escreva "Nada". Nunca esconda um problema no meio do texto.
+
+Regras:
+- Curto. Sem introdução, sem repetir o pedido, sem narrar o que você vai fazer, sem resumo no final.
+- Frases simples, em português do dia a dia.
+- Números e nomes exatos. Se não tem certeza, diga que não tem.
+- Quando o resultado for longo (relatório, análise, comparação), entregue em formato visual (uma página, uma planilha,
+  um painel ou um quadro) e na resposta deixe só as 4 partes e o link ou arquivo.
 
 ## Como eu recebo as entregas
 
